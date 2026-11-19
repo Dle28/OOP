@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OsSim.Application/OsSim.Application.csproj" />
+    <Project Path="src/OsSim.Domain/OsSim.Domain.csproj" />
+    <Project Path="src/OsSim.Wpf/OsSim.Wpf.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OsSim.Application.Tests/OsSim.Application.Tests.csproj" />
+    <Project Path="tests/OsSim.Domain.Tests/OsSim.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

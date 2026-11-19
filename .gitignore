@@ -1,0 +1,13 @@
+.vs/
+**/bin/
+**/obj/
+TestResults/
+*.user
+*.suo
+
+# Local build, validation, and presentation artifacts
+.build-validation/
+.build-validation-video/
+$build/
+output/
+texput.log

@@ -1,0 +1,50 @@
+@startuml
+state "Tiến trình CPU" as CpuProcess {
+  [*] --> New
+  New --> Ready : thời điểm đến
+  Ready --> Running : dispatcher chọn
+  Running --> Ready : bị ngắt / hết quantum
+  Ready --> ContextSwitching : đổi PID và overhead > 0
+  ContextSwitching --> Running : overhead kết thúc
+  Running --> Terminated : burst hoàn tất
+  Terminated --> [*]
+}
+
+state "Banker safety session" as Banker {
+  [*] --> Checking
+  Checking --> Checking : Need ≤ Work / Finish / trả Allocation
+  Checking --> Safe : mọi tiến trình Finish
+  Checking --> Unsafe : không còn tiến trình khả thi
+  Safe --> [*]
+  Unsafe --> [*]
+}
+
+state "Actor đồng bộ" as SyncActor {
+  [*] --> Ready
+  Ready --> Blocked : chờ resource đang bận
+  Blocked --> Ready : được đánh thức theo FIFO
+  Ready --> Terminated : hoàn tất toàn bộ công việc
+  Terminated --> [*]
+}
+
+state "Kịch bản đồng bộ" as Scenario {
+  [*] --> Active
+  Active --> Completed : mọi actor đã Terminated
+  Active --> Deadlocked : còn việc và không còn actor Ready
+  Completed --> [*]
+  Deadlocked --> [*]
+}
+
+note right of SyncActor
+  Actor chạy một lệnh ảo nguyên tử
+  trong mỗi bước dispatch. Running là
+  hành động tạm thời, không phải giá trị
+  VirtualActorState được lưu trong snapshot.
+end note
+
+note right of Scenario
+  Deadlocked là trạng thái toàn kịch bản,
+  không phải trạng thái của từng actor.
+end note
+@enduml
+

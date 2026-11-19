@@ -1,0 +1,41 @@
+@startuml
+actor "Người học" as Student
+participant "Module ViewModel" as VM
+participant "SimulationCatalog" as Catalog
+participant "Domain Module" as Module
+participant "IBankerModule" as Banker
+participant "ISimulationSession" as Session
+participant "PlaybackController<T>" as Playback
+
+Student -> VM: Nhập cấu hình / chọn thuật toán
+VM -> Catalog: Create...Session(input)
+Catalog -> Module: Validate(input)
+Module --> Catalog: ValidationResult
+alt hợp lệ
+  Catalog -> Module: CreateSession(input)
+  Module --> Catalog: SimulationCreationResult(session)
+  Catalog --> VM: Session thành công
+  VM -> Playback: Attach(session, commandFactory?)
+  Playback --> VM: Snapshot hiện tại
+  VM --> Student: Hiển thị trạng thái ban đầu
+  Student -> Playback: Play / Step / Back / Reset
+  Playback -> Session: StepForward(command?) / StepBackward() / Reset()
+  Session --> Playback: SimulationStepResult(snapshot,event,error?)
+  Playback --> VM: SnapshotUpdated
+  VM --> Student: Chiếu snapshot lên giao diện
+else đầu vào không hợp lệ
+  Module --> Catalog: Lỗi có kiểu
+  Catalog --> VM: SimulationCreationResult(errors)
+  VM --> Student: Hiển thị lỗi, giữ phiên hiện tại
+end
+opt Banker request test
+  Student -> VM: Nhập process và request vector
+  VM -> Catalog: TestBankerRequest(input, request)
+  Catalog -> Banker: TestRequest(currentState, request)
+  Banker -> Banker: Kiểm tra trên trạng thái tạm
+  Banker --> Catalog: BankerRequestResult
+  Catalog --> VM: Granted / Wait / WouldBeUnsafe hoặc typed errors
+  VM --> Student: Hiển thị kết quả; session playback không đổi
+end
+@enduml
+

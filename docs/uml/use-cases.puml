@@ -1,0 +1,30 @@
+@startuml
+left to right direction
+actor Student
+rectangle "OS Simulation Studio" {
+  usecase "Configure simulation" as Configure
+  usecase "Choose algorithm / scenario" as Choose
+  usecase "Play / pause" as Play
+  usecase "Step forward / backward" as Step
+  usecase "Reset simulation" as Reset
+  usecase "Inspect timeline, state, metrics" as Inspect
+  usecase "Choose runnable actor" as Actor
+  usecase "Inspect Banker safety sequence" as Banker
+  usecase "Test resource request" as Request
+  usecase "Configure context-switch overhead" as Overhead
+  usecase "Inspect swap-in / swap-out" as Swap
+}
+Student --> Configure
+Student --> Choose
+Student --> Play
+Student --> Step
+Student --> Reset
+Student --> Inspect
+Student --> Actor
+Student --> Banker
+Student --> Request
+Student --> Overhead
+Student --> Swap
+Choose .> Configure : <<include>>
+Inspect .> Step : <<extend>>
+@enduml

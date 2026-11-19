@@ -1,0 +1,85 @@
+<UserControl x:Class="OsSim.Wpf.Views.PlaybackControls"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Style="{StaticResource SurfaceCardStyle}" Padding="12,10" Margin="3">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <WrapPanel VerticalAlignment="Center">
+                    <Button Content="⟲ Đầu" Command="{Binding ResetCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" ToolTip="Về trạng thái ban đầu" />
+                    <Button Content="◀ Lùi" Command="{Binding StepBackwardCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" ToolTip="Lùi một bước" />
+                    <Button Content="▶ Phát" Command="{Binding PlayCommand}"
+                            ToolTip="Phát lần lượt từng hành động">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="Ⅱ Tạm dừng" Command="{Binding PauseCommand}"
+                            ToolTip="Giữ nguyên khung hình và lời giải thích">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="Tiến ▶" Command="{Binding StepForwardCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" ToolTip="Tiến một bước" />
+                </WrapPanel>
+
+                <Slider Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center"
+                        Minimum="0" Maximum="{Binding TimelineMaximum}" SmallChange="1" LargeChange="1"
+                        TickFrequency="1"
+                        IsSnapToTickEnabled="True" IsEnabled="{Binding CanSeek}"
+                        Value="{Binding CurrentStepPosition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        ToolTip="Kéo để tua tới một bước của trace dựng sẵn"
+                        AutomationProperties.Name="Dòng thời gian mô phỏng" />
+
+                <TextBlock Grid.Column="2" Text="{Binding TimelineLabel}" FontWeight="SemiBold"
+                           Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center"
+                           Margin="4,0,3,0" />
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="4,8,4,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Nhịp phát" Foreground="{StaticResource MutedBrush}"
+                           VerticalAlignment="Center" />
+                <Slider Grid.Column="1" Minimum="500" Maximum="5000" SmallChange="100"
+                        Value="{Binding IntervalMilliseconds, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="10,0" VerticalAlignment="Center"
+                        ToolTip="Thời gian giữ mỗi bước để đọc lời giải thích" />
+                <TextBlock Grid.Column="2" Text="{Binding IntervalLabel}" Foreground="{StaticResource MutedBrush}"
+                           VerticalAlignment="Center" Margin="2,0,12,0" />
+                <TextBlock Grid.Column="3" Text="{Binding StatusMessage}" Foreground="{StaticResource MutedBrush}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>
+

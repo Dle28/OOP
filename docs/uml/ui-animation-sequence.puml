@@ -1,0 +1,48 @@
+@startuml
+actor "Người học" as Student
+participant "PlaybackControls" as Controls
+participant "PlaybackController<T>" as Playback
+participant "ISimulationSession<T>" as Session
+participant "Module ViewModel" as VM
+participant "Snapshot-bound view" as View
+participant "PulseAnimation" as Pulse
+participant "ProgressValueAnimation" as Progress
+
+Student -> Controls: Step / Play / Back / scrub timeline
+Controls -> Playback: command
+alt Trace có số bước cố định
+  Playback -> Session: lặp StepForward / StepBackward tới vị trí đích
+  Session --> Playback: StepPosition / StepCount + snapshot đích
+else Trace tương tác
+  Playback -> Session: StepForward / StepBackward
+  Session --> Playback: vị trí đã đi; StepCount = null
+  Controls -> Student: timeline không tua trước tới tương lai chưa tạo
+end
+Playback -> Playback: cập nhật nhãn bước và nhịp phát
+Playback -> VM: SnapshotUpdated
+VM -> VM: Chiếu trạng thái thành display records
+VM -> VM: SimulationActionNarrator đọc event mới nhất
+VM -> View: Bind SimulationActionVisual cạnh vùng mô phỏng
+VM -> View: Giữ lời giải thích tới bước tiếp theo hoặc khi người học tạm dừng
+VM -> View: Cập nhật State và PulseVersion của action card
+View -> Pulse: DependencyProperty changed trên visual bị tác động
+alt Windows cho phép animation
+  Pulse -> View: Nhấn nhẹ thẻ diễn giải và visual liên quan
+  Pulse -> View: Scale 1.0 → 1.06 → 1.0 (150 ms mỗi chiều)
+  VM -> View: Buffer slot PulseVersion changed
+  View -> Pulse: Slot pulse
+  VM -> View: Banker process node PulseVersion changed
+  View -> Pulse: Process node pulse at SAFE_STEP
+  VM -> View: CPU progress target changed
+  View -> Progress: TargetValue changed
+  Progress -> View: Nội suy ProgressBar trong 220 ms
+else Windows tắt animation vùng nội dung
+  Pulse -> View: Giữ nhãn và trạng thái, không scale
+  Progress -> View: Gán ngay giá trị tiến độ
+end
+note over Session,Pulse
+  Các animation chỉ phản ánh snapshot, không gọi ngược Domain,
+  không tạo tick mô phỏng và không đổi trạng thái session.
+end note
+@enduml
+

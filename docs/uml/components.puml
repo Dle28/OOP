@@ -1,0 +1,45 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+package "OsSim.Wpf — presentation" {
+  [MainWindow / Views] as Views
+  [Module ViewModels] as ViewModels
+  [PlaybackController<T>] as Playback
+  [PulseAnimation] as Pulse
+  [ProgressValueAnimation] as ProgressAnimation
+  [Composition Root] as Composition
+}
+package "OsSim.Application — use cases" {
+  [SimulationCatalog] as Catalog
+}
+package "OsSim.Domain — simulation rules" {
+  [Simulation Contracts / Sessions] as Contracts
+  [CPU Scheduling] as CPU
+  [Process Synchronization] as Sync
+  [Banker Resource Allocation] as Banker
+  [Virtual Memory] as Memory
+}
+
+Views --> ViewModels : binding / commands
+ViewModels --> Playback : attach and project snapshots
+ViewModels --> Catalog : create session
+Composition --> Catalog : composition
+Playback --> Contracts : session commands
+Views ..> Pulse : attached property
+Views ..> ProgressAnimation : attached property
+Catalog --> CPU : CPU session
+Catalog --> Sync : synchronization session
+Catalog --> Banker : safety session and request check
+Catalog --> Memory : memory session
+CPU --> Contracts
+Sync --> Contracts
+Banker --> Contracts
+Memory --> Contracts
+
+note bottom of Contracts
+  Domain has no WPF dependency.
+  DispatcherTimer and animations belong to Wpf.
+end note
+@enduml
+

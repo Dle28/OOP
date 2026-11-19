@@ -1,0 +1,366 @@
+@startuml
+skinparam classAttributeIconSize 0
+hide empty members
+
+interface "ISimulationModule<TInput, TSnapshot>" as ISimulationModule {
+  +Validate(input: TInput): ValidationResult
+  +CreateSession(input: TInput): SimulationCreationResult<TSnapshot>
+}
+interface "ISimulationSession<TSnapshot>" as ISimulationSession {
+  +CurrentSnapshot: TSnapshot
+  +StepPosition: int
+  +StepCount: int?
+  +CanStepForward: bool
+  +CanStepBackward: bool
+  +StepForward(command?: SimulationCommand): SimulationStepResult<TSnapshot>
+  +StepBackward(): SimulationStepResult<TSnapshot>
+  +Reset(): SimulationStepResult<TSnapshot>
+}
+class "SimulationCreationResult<TSnapshot>" as CreationResult {
+  +Session: ISimulationSession<TSnapshot>?
+  +Errors: IReadOnlyList<SimulationError>
+  +Succeeded: bool
+}
+class "SimulationStepResult<TSnapshot>" as StepResult {
+  +Succeeded: bool
+  +IsCompleted: bool
+  +Snapshot: TSnapshot
+  +Event: SimulationEvent?
+  +Error: SimulationError?
+}
+class SimulationEvent {
+  +Sequence: long
+  +VirtualTime: decimal
+  +Code: string
+  +Description: string
+  +ActorId: string?
+}
+class SimulationCommand {
+  +ActorId: string?
+  +AutomaticDispatch: bool
+}
+class "TimelineSimulationSession<TSnapshot>" as TimelineSession
+class "ReplayableSimulationSession<TSnapshot>" as ReplaySession
+class "SimulationFrame<TSnapshot>" as Frame
+
+class CpuSchedulingModule
+class CpuSchedulingInput {
+  +ContextSwitchOverhead: decimal
+}
+class CpuSimulationSnapshot {
+  +Time: decimal
+  +ContextSwitchCount: int
+  +ContextSwitchTime: decimal
+  +DispatchingProcessId: string?
+}
+class GanttSegment {
+  +Start: decimal
+  +End: decimal
+  +Kind: GanttSegmentKind
+  +IsIdle: bool
+  +IsContextSwitch: bool
+}
+enum GanttSegmentKind {
+  Execution
+  Idle
+  ContextSwitch
+}
+class CpuMetrics {
+  +ContextSwitchCount: int
+  +ContextSwitchTime: decimal
+}
+interface ICpuSchedulingPolicy
+class "CPU scheduling policies" as CpuPolicies
+class SynchronizationModule
+class SynchronizationInput
+class SynchronizationSnapshot {
+  +LastDispatchedActorId: string?
+}
+class WaitForEdge {
+  +WaiterActorId: string
+  +ResourceId: string
+  +OwnerActorId: string?
+}
+class VirtualMemoryModule
+class VirtualMemoryInput
+class VirtualMemorySnapshot {
+  +SwapPages: IReadOnlyList<ulong>
+}
+class MemoryMetrics {
+  +SwapIns: int
+  +SwapOuts: int
+}
+interface IPageReplacementPolicy
+class "Page replacement policies" as PagePolicies
+interface IBankerModule {
+  +TestRequest(currentState: BankerInput, request: BankerResourceRequest): BankerRequestResult
+}
+class BankerModule
+class BankerInput
+class BankerProcessInput
+class BankerResourceRequest
+class BankerProcessSnapshot
+class BankerSnapshot {
+  +Work: IReadOnlyList<int>
+  +SafeSequence: IReadOnlyList<string>
+  +State: BankerRunState
+}
+enum BankerRunState {
+  Running
+  Safe
+  Unsafe
+}
+class BankerRequestResult {
+  +Succeeded: bool
+  +Disposition: BankerRequestDisposition?
+  +SafeSequence: IReadOnlyList<string>
+  +AvailableAfterEvaluation: IReadOnlyList<int>
+  +Errors: IReadOnlyList<SimulationError>
+  +Message: string
+}
+enum BankerRequestDisposition {
+  Granted
+  WaitForResources
+  WouldBeUnsafe
+}
+class SimulationCatalog
+
+package "WPF presentation" {
+  class MainWindow
+  class MainWindowViewModel {
+    +SelectedArea: SimulationArea
+    +ActiveViewModel: ISimulationAreaViewModel
+    +NavigateToCommand
+    -NavigateTo(item: SimulationNavigationItem)
+  }
+  class SimulationNavigationItem {
+    +Area: SimulationArea
+    +Index: string
+    +Title: string
+    +Description: string
+    +IsSelected: bool
+  }
+  enum SimulationArea {
+    Cpu
+    Synchronization
+    Memory
+    ResourceAllocation
+  }
+  interface ISimulationAreaViewModel {
+    +Area: SimulationArea
+  }
+  class "PlaybackController<TSnapshot>" as PlaybackController {
+    +CurrentStepPosition: int
+    +StepCount: int?
+    +CanSeek: bool
+    +TimelineMaximum: int
+    +TimelineLabel: string
+    +IntervalMilliseconds: int
+    +IntervalLabel: string
+    -Seek(position: int)
+  }
+  class CpuSchedulerViewModel
+  class SynchronizationViewModel
+  class VirtualMemoryViewModel
+  class BankerViewModel
+  class CpuProcessVisual
+  class GanttSegmentVisual
+  class SynchronizationActorDisplay
+  class SynchronizationResourceDisplay
+  class BufferSlotVisual
+  class MemoryFlowStageVisual
+  class MetricCardVisual {
+    +Label: string
+    +Value: string
+    +Detail: string
+    +Tone: MetricTone
+  }
+  class SimulationActionVisual {
+    +StepLabel: string
+    +Title: string
+    +Description: string
+    +Explanation: string
+    +Tone: MetricTone
+    +PulseVersion: long
+  }
+  class SimulationActionNarrator {
+    +Describe(area: SimulationArea, event?: SimulationEvent, isDeadlocked: bool = false): SimulationActionVisual
+  }
+  enum MetricTone {
+    Primary
+    Success
+    Warning
+    Danger
+  }
+  class MemoryReferenceVisual {
+    +Position: int
+    +Address: ulong
+    +VirtualPageNumber: ulong
+    +ResultLabel: string
+    +IsCurrent: bool
+  }
+  class MemoryFrameVisual {
+    +Index: int
+    +PageLabel: string
+    +StatusLabel: string
+    +IsCurrent: bool
+    +WasReplaced: bool
+  }
+  class WaitGraphEdgeVisual {
+    +FromLabel: string
+    +ToLabel: string
+    +EdgeLabel: string
+    +IsAllocation: bool
+  }
+  class BankerProcessVisual
+  class BankerRagProjector <<static>> {
+    +Project(snapshot?: BankerSnapshot): BankerRagGraphVisual
+  }
+  class BankerRagGraphVisual {
+    +CanvasWidth: double
+    +CanvasHeight: double
+    +Summary: string
+    +Nodes: IReadOnlyList<BankerRagNodeVisual>
+    +Edges: IReadOnlyList<BankerGraphEdgeVisual>
+  }
+  class BankerRagNodeVisual {
+    +Label: string
+    +SubLabel: string
+    +IsResource: bool
+    +IsFinished: bool
+    +Left: double
+    +Top: double
+    +PulseVersion: long
+  }
+  class BankerGraphEdgeVisual {
+    +FromLabel: string
+    +ToLabel: string
+    +EdgeLabel: string
+    +IsAllocation: bool
+    +Start: Point
+    +End: Point
+    +ArrowPoints: PointCollection
+  }
+  class PulseAnimation <<attached property>> {
+    +PulseVersion: long
+  }
+  class ProgressValueAnimation <<attached property>> {
+    +TargetValue: double
+  }
+}
+
+ISimulationModule <|.. CpuSchedulingModule
+ISimulationModule <|.. SynchronizationModule
+ISimulationModule <|.. VirtualMemoryModule
+ISimulationModule <|-- IBankerModule
+IBankerModule <|.. BankerModule
+ISimulationSession <|.. TimelineSession
+ISimulationSession <|.. ReplaySession
+CpuSchedulingModule --> ICpuSchedulingPolicy : selects
+CpuPolicies ..|> ICpuSchedulingPolicy
+VirtualMemoryModule --> IPageReplacementPolicy : selects
+PagePolicies ..|> IPageReplacementPolicy
+SynchronizationModule ..> ReplaySession : creates
+CpuSchedulingModule ..> TimelineSession : creates
+VirtualMemoryModule ..> TimelineSession : creates
+BankerModule ..> TimelineSession : creates
+TimelineSession o--> Frame : immutable trace
+ReplaySession ..> SimulationCommand
+ReplaySession ..> StepResult
+TimelineSession ..> StepResult
+CpuSchedulingModule ..> CpuSchedulingInput
+CpuSchedulingModule ..> CpuSimulationSnapshot
+CpuSchedulingModule ..> GanttSegment
+CpuSchedulingModule ..> CpuMetrics
+CpuSimulationSnapshot "1" o-- "0..*" GanttSegment : Gantt trace
+CpuSimulationSnapshot ..> CpuMetrics
+SynchronizationModule ..> SynchronizationInput
+SynchronizationModule ..> SynchronizationSnapshot
+VirtualMemoryModule ..> VirtualMemoryInput
+VirtualMemoryModule ..> VirtualMemorySnapshot
+VirtualMemorySnapshot ..> MemoryMetrics
+BankerModule ..> BankerInput
+BankerModule ..> BankerSnapshot
+BankerModule ..> BankerResourceRequest
+BankerModule ..> BankerRequestResult
+BankerInput "1" *-- "1..*" BankerProcessInput
+BankerSnapshot "1" *-- "1..*" BankerProcessSnapshot
+BankerSnapshot "1" o-- "0..*" SimulationEvent
+BankerRequestResult ..> BankerRequestDisposition
+SimulationCatalog --> CpuSchedulingModule
+SimulationCatalog --> SynchronizationModule
+SimulationCatalog --> VirtualMemoryModule
+SimulationCatalog --> IBankerModule
+CreationResult ..> ISimulationSession
+CreationResult ..> SimulationError
+StepResult ..> SimulationEvent
+StepResult ..> SimulationError
+SimulationCatalog ..> CreationResult
+MainWindow --> MainWindowViewModel : constructor injection
+MainWindowViewModel *-- CpuSchedulerViewModel
+MainWindowViewModel *-- SynchronizationViewModel
+MainWindowViewModel *-- VirtualMemoryViewModel
+MainWindowViewModel *-- BankerViewModel
+MainWindowViewModel "1" *-- "4" SimulationNavigationItem : owns
+MainWindowViewModel ..> SimulationCatalog : constructor parameter
+MainWindowViewModel ..> SimulationArea
+SimulationNavigationItem ..> SimulationArea
+ISimulationAreaViewModel <|.. CpuSchedulerViewModel
+ISimulationAreaViewModel <|.. SynchronizationViewModel
+ISimulationAreaViewModel <|.. VirtualMemoryViewModel
+ISimulationAreaViewModel <|.. BankerViewModel
+MainWindowViewModel --> ISimulationAreaViewModel : ActiveViewModel
+MetricCardVisual ..> MetricTone
+SimulationActionVisual ..> MetricTone
+SimulationActionVisual ..> PulseAnimation : PulseVersion
+SimulationActionNarrator ..> SimulationEvent : reads
+SimulationActionNarrator ..> SimulationActionVisual : creates
+CpuSchedulerViewModel ..> SimulationActionNarrator : CurrentAction
+SynchronizationViewModel ..> SimulationActionNarrator : CurrentAction
+VirtualMemoryViewModel ..> SimulationActionNarrator : CurrentAction
+BankerViewModel ..> SimulationActionNarrator : CurrentAction
+SynchronizationSnapshot "1" o-- "0..*" WaitForEdge : wait graph
+WaitGraphEdgeVisual ..> WaitForEdge : presentation projection
+CpuSchedulerViewModel "1" *-- "1" PlaybackController : CpuSimulationSnapshot
+SynchronizationViewModel "1" *-- "1" PlaybackController : SynchronizationSnapshot
+VirtualMemoryViewModel "1" *-- "1" PlaybackController : VirtualMemorySnapshot
+BankerViewModel "1" *-- "1" PlaybackController : BankerSnapshot
+CpuSchedulerViewModel ..> CpuProcessVisual
+CpuSchedulerViewModel ..> GanttSegmentVisual
+CpuSchedulerViewModel ..> MetricCardVisual
+CpuSchedulerViewModel ..> SimulationError : raw input parse failure
+SynchronizationViewModel ..> SynchronizationActorDisplay
+SynchronizationViewModel ..> SynchronizationResourceDisplay
+SynchronizationViewModel ..> BufferSlotVisual
+SynchronizationViewModel ..> MetricCardVisual
+SynchronizationViewModel ..> WaitGraphEdgeVisual : projects WaitForEdge
+SynchronizationViewModel ..> SynchronizationSnapshot : reads
+VirtualMemoryViewModel ..> MemoryFlowStageVisual
+VirtualMemoryViewModel ..> MemoryReferenceVisual
+VirtualMemoryViewModel ..> MemoryFrameVisual
+VirtualMemoryViewModel ..> MetricCardVisual
+VirtualMemoryViewModel ..> SimulationError : address parse failure
+BankerViewModel ..> BankerProcessVisual
+BankerViewModel --> BankerRagProjector : ResourceGraph
+BankerRagProjector ..> BankerSnapshot : reads
+BankerRagProjector --> BankerRagGraphVisual : creates
+BankerRagGraphVisual "1" *-- "0..*" BankerRagNodeVisual
+BankerRagGraphVisual "1" *-- "0..*" BankerGraphEdgeVisual
+BankerViewModel ..> BankerSnapshot : projects
+BankerViewModel ..> BankerRequestResult : request display
+PlaybackController ..> ISimulationSession : calls
+CpuProcessVisual ..> PulseAnimation : PulseVersion
+GanttSegmentVisual ..> PulseAnimation : PulseVersion
+SynchronizationActorDisplay ..> PulseAnimation : PulseVersion
+MemoryFlowStageVisual ..> PulseAnimation : PulseVersion
+MemoryReferenceVisual ..> PulseAnimation : PulseVersion
+MemoryFrameVisual ..> PulseAnimation : PulseVersion
+BufferSlotVisual ..> PulseAnimation : PulseVersion
+CpuProcessVisual ..> ProgressValueAnimation : progress value
+
+note right of PulseAnimation
+  Presentation only.
+  Does not update a simulation session.
+end note
+@enduml
+

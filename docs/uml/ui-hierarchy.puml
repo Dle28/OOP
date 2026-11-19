@@ -1,0 +1,100 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+top to bottom direction
+
+package "MainWindow shell" as Shell {
+  [Sidebar] as Sidebar
+  [App bar] as AppBar
+  [ContentControl] as ContentHost
+}
+package "Shell ViewModel" as ShellViewModel {
+  [MainWindowViewModel] as MainVm
+  [SimulationNavigationItem[]] as NavigationItems
+}
+package "Views" {
+  [CpuSchedulerView] as CpuView
+  [SynchronizationView] as SyncView
+  [VirtualMemoryView] as MemView
+  [BankerView] as BankerView
+  [PlaybackControls] as PlaybackView
+}
+package "Module ViewModels" {
+  [CpuSchedulerViewModel] as CpuVm
+  [SynchronizationViewModel] as SyncVm
+  [VirtualMemoryViewModel] as MemVm
+  [BankerViewModel] as BankerVm
+  [PlaybackController<T>] as PlaybackVm
+}
+package "Snapshot projections" as Projections {
+  [CPU core / ready queue / Gantt] as CpuProjection
+  [Actors / resources / buffer / wait edges] as SyncProjection
+  [Reference stream / MMU flow / RAM frames / swap pages] as MemProjection
+  [Banker matrix / Work / safe sequence / RAG] as BankerProjection
+  [BankerRagProjector] as BankerRagProjector
+  [MetricCardVisual] as MetricCard
+  [SimulationActionVisual] as ActionVisual
+  [SimulationActionNarrator] as ActionNarrator
+  [PulseAnimation] as Pulse
+  [ProgressValueAnimation] as ProgressAnimation
+}
+
+Sidebar --> MainVm : NavigateTo
+Sidebar --> NavigationItems : selected state
+MainVm *-- NavigationItems : owns
+MainVm --> ContentHost : ActiveViewModel
+AppBar ..> MainVm : lab shell context
+ContentHost --> CpuView : DataTemplate by VM type
+ContentHost --> SyncView : DataTemplate by VM type
+ContentHost --> MemView : DataTemplate by VM type
+ContentHost --> BankerView : DataTemplate by VM type
+
+CpuView --> CpuVm : input and snapshot bindings
+SyncView --> SyncVm : input and snapshot bindings
+MemView --> MemVm : input and snapshot bindings
+BankerView --> BankerVm : matrix, request and snapshot bindings
+CpuView --> PlaybackView
+SyncView --> PlaybackView
+MemView --> PlaybackView
+BankerView --> PlaybackView
+PlaybackView --> PlaybackVm
+CpuVm --> CpuProjection : CpuSimulationSnapshot
+SyncVm --> SyncProjection : SynchronizationSnapshot
+MemVm --> MemProjection : VirtualMemorySnapshot
+BankerVm --> BankerProjection : BankerSnapshot
+BankerVm --> BankerRagProjector : ResourceGraph
+BankerRagProjector --> BankerProjection : nodes + directed edges
+CpuVm --> MetricCard
+SyncVm --> MetricCard
+MemVm --> MetricCard
+BankerVm --> MetricCard
+CpuVm --> ActionNarrator : CurrentAction
+SyncVm --> ActionNarrator : CurrentAction
+MemVm --> ActionNarrator : CurrentAction
+BankerVm --> ActionNarrator : CurrentAction
+ActionNarrator --> ActionVisual : maps latest event
+ActionVisual --> CpuView : DataTemplate
+ActionVisual --> SyncView : DataTemplate
+ActionVisual --> MemView : DataTemplate
+ActionVisual --> BankerView : DataTemplate
+CpuProjection --> Pulse
+CpuProjection --> ProgressAnimation
+SyncProjection --> Pulse
+MemProjection --> Pulse
+BankerProjection --> Pulse
+
+note right of MainVm
+  Owns navigation selection and the four
+  module ViewModels. It does not own simulation rules.
+end note
+
+note right of ActionNarrator
+  WPF-only explanation projection. It reads a Domain event
+  and never changes simulation state or playback position.
+end note
+
+note right of Pulse
+  WPF-only, one short pulse per changed visual version;
+  respects the Windows animation setting.
+end note
+@enduml
